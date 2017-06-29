@@ -73,14 +73,14 @@ int test(int range) // runs the actual test or quiz function
 		}
 		int fail = 0;
 		for ( i = 0 ; i < 20 ; i ++ ){ // tests to see is the input exactly matches the answer from the file
-			if ( input[i] != answer[2][i] && answer[2][i] != '\0') {
+			if ( input[i] != answer[4][i] && answer[4][i] != '\0') {
 				fail = 1;
 			}
 		}
 		total ++; // total (for the score) goes up when a test is done
 		if ( fail == 1 ) {
 			input[strlen(input)-1] = 0; // if you get the answer wrong then it will tell you 
-			printf("incorrect\n\'%s\'✗\n\'%s\'✓\n",input,  answer[2]); // and give you the correct answer
+			printf("incorrect\n\'%s\'✗\n\'%s\'✓\n",input,  answer[4]); // and give you the correct answer
 		} else {
 			score ++;
 			printf("correct ✓ \n"); // if you get is right then you know and your score goes up
@@ -90,14 +90,14 @@ int test(int range) // runs the actual test or quiz function
 
 int main() // the main starting loop
 {
-	char * testvar; // used so crudley catch a stray newline
+	char testvar = '\0'; // used so crudley catch a stray newline
 	printf("test up to number: "); // asks the level of the testing
 	int num, nitems;
 	nitems = scanf("%d", &num); // scans and tests the input, a bad input will end the program
 	if (nitems == EOF) {
 	} else if (nitems == 0) {
 	} else {
-		fgets(testvar, 2, stdin);
+		fgets(&testvar, 2, stdin);
 		test(num - 1); // calls the test with the level that is required
 	}
 }
