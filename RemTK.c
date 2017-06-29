@@ -133,5 +133,6 @@ int main() // the main starting loop
  *  		sets the global varible 'line' to have all the infomation to be tested
  *  		
  *NOTE 1:
- * 	answer[8] = [heisig number][keyword in the 3rd edition][keyword in the 4th edition][keyword in the 5th edition][stroke count][index ordinal][lesson number][empty for error catching]
+ * 	answer[9] = [heisig number][kanji][keyword in the 3rd edition][keyword in the 4th edition][keyword in the 5th edition][stroke count][index ordinal][lesson number][empty for error catching]
  * 	additional information is stored here for future stuff to add
+ */
