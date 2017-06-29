@@ -68,7 +68,7 @@ int test(int range)
 		printf("%s \t %d/%d\n", answer[1], score, total);
 		fgets(input, 20, stdin);
 		if ( input[0] == '\n' ) {
-			printf("you got %d%% correct.\n", 100/total*score);
+			printf("you got %d%% correct.\n", 100*score/total);
 			return(1);
 		}
 		int fail = 0;
