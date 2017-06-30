@@ -41,22 +41,21 @@ int test(int range) // runs the actual test or quiz function
 	int score = 0;
 	int total = 0;
 	char input[20] = " "; // setting variables
-	char answer [9][20];
+	char answer [10][20];
 	int i;
 	int j;
 	while (1) {
-		for ( i = 0 ; i < 8 ; i++ ) {
+		for ( i = 0 ; i < 9 ; i++ ) {
 			for ( j = 0 ; j < 20 ; j++ ) {
 				answer[i][j] = '\0'; // clears out the arrays after each stage
 				input[j] = '\0';
 			}
 		}
 		getLine(range);
-		i = -1;
+		i = 0;
 		int answerOne=0; // resetting variables for the loop
 		int answerTwo=0;
-		while ( answerOne < 7 ) { // splits the random line in the file into a 2D array
-			i++;
+		while ( answerOne < 9 && line[i] != '\0') { // splits the random line in the file into a 2D array
 			if ( line[i] == ':' ) { // the elements of which are different information about the kanji
 				answerOne ++;
 				answerTwo = 0;
@@ -64,8 +63,9 @@ int test(int range) // runs the actual test or quiz function
 				answer[answerOne][answerTwo] = line[i]; // see NOTE 1 for more infomation 
 				answerTwo ++;
 			}
+			i++;
 		}
-		printf("%s \t %d/%d\n", answer[1], score, total); // prints the kanji to test and the current score
+		printf("%s \t %d/%d\n \t %s", answer[1], score, total, answer[8]); // prints the kanji to test and the current score
 		fgets(input, 20, stdin); // reading the answer
 		if ( input[0] == '\n' ) { // to exit the test press enter with no input
 			printf("you got %d%% correct.\n", 100*score/total); // the percentage of correct answers is shown
