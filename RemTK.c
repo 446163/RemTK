@@ -38,12 +38,20 @@ int getLine(int limit) //gets and sets the kanji to test
 
 int test(int range) // runs the actual test or quiz function 
 {
+	char errors[range][3][20]; // used to keep track of the errors that the payer makes
 	int score = 0;
 	int total = 0;
 	char input[20] = " "; // setting variables
 	char answer [10][20];
 	int i;
 	int j;
+	for ( i = 0 ; i < range ; i++ ) { // sets the errors array to cleared as they are only used once
+		for ( j = 0 ; j < 20 ; j++ ) {
+			errors[i][0][j] = '\0';
+			errors[i][1][j] = 0;
+			errors[i][2][j] = '\0';
+		}
+	}
 	while (1) {
 		for ( i = 0 ; i < 9 ; i++ ) {
 			for ( j = 0 ; j < 20 ; j++ ) {
@@ -68,7 +76,12 @@ int test(int range) // runs the actual test or quiz function
 		printf("%s \t %d/%d\n \t %s", answer[1], score, total, answer[8]); // prints the kanji to test and the current score
 		fgets(input, 20, stdin); // reading the answer
 		if ( input[0] == '\n' ) { // to exit the test press enter with no input
-			printf("you got %d%% correct.\n", 100*score/total); // the percentage of correct answers is shown
+			printf("you got %d%% correct.\nerror summary:\n", 100*score/total); // the percentage of correct answers is shown
+			for ( i = 0 ; i < range ; i++ ) { // runs through all options for the errors array
+				if ( errors[i][0][0] != '\0' ) { // only prints ones that have a value
+						printf("%d : %s : %s \n", errors[i][1][0], errors[i][0], errors[i][2]); // shows the user what they got wrong, what the right answer is and how many times they got it wrong during the test
+				}
+			}
 			return(1);
 		}
 		int fail = 0;
@@ -81,6 +94,22 @@ int test(int range) // runs the actual test or quiz function
 		if ( fail == 1 ) {
 			input[strlen(input)-1] = 0; // if you get the answer wrong then it will tell you 
 			printf("incorrect\n\'%s\'✗\n\'%s\'✓\n",input,  answer[4]); // and give you the correct answer
+			int errorLoop = 1;
+			int errorCount = 0;
+			while ( errorLoop == 1 ) {
+				if ( (errors[errorCount][0][0] == answer[1][0] && errors[errorCount][0][1] == answer[1][1] && errors[errorCount][0][1] == answer[1][1]) || errors[errorCount][1][0] == '\0'){ // adds the kanji to the list if you got it wrong, and increments the number
+					errorLoop = 0;
+					errors[errorCount][0][0] = answer[1][0];
+					errors[errorCount][0][1] = answer[1][1];
+					errors[errorCount][0][2] = answer[1][2];
+					errors[errorCount][1][0] ++;
+					for ( i = 0 ; i < 20 ; i++ ) {
+						errors[errorCount][2][i] = answer[2][i];
+					}
+					errorLoop = 0;
+				}
+				errorCount ++;
+			}
 		} else {
 			score ++;
 			printf("correct ✓ \n"); // if you get is right then you know and your score goes up
