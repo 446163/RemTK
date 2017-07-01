@@ -13,30 +13,23 @@ int getLine(int limit) //gets and sets the kanji to test
 	static const char filename[] = "heisig-data.txt";
 	FILE *file = fopen(filename, "r"); // opens the test file
 	int count = 0;
-	if ( file != NULL )
-	{
-	    while (fgets(line, sizeof line, file) != NULL)
-	    {
-	        if (count == lineNumber) // goes to the required line
-	        {
+	if ( file != NULL ) {
+	    while ( fgets ( line, sizeof line, file ) != NULL ) {
+	        if ( count == lineNumber ) { // goes to the required line
 	    		fclose(file); // reads the line into memory and then closes the file
 				return(0);
-	        }
-	        else
-	        {
+	        } else {
 	            count++;
 	        }
 	    }
 	    fclose(file);
-	}
-	else
-	{
+	} else {
 		printf("the heisig-data text file does not exist\n"); // if the file is missing 
 	}
 	return(0);
 }
 
-int test(int range) // runs the actual test or quiz function 
+int test ( int range ) // runs the actual test or quiz function 
 {
 	char errors[range][3][20]; // used to keep track of the errors that the payer makes
 	int score = 0;
@@ -52,7 +45,7 @@ int test(int range) // runs the actual test or quiz function
 			errors[i][2][j] = '\0';
 		}
 	}
-	while (1) {
+	while ( 1 ) {
 		for ( i = 0 ; i < 9 ; i++ ) {
 			for ( j = 0 ; j < 20 ; j++ ) {
 				answer[i][j] = '\0'; // clears out the arrays after each stage
@@ -61,8 +54,8 @@ int test(int range) // runs the actual test or quiz function
 		}
 		getLine(range);
 		i = 0;
-		int answerOne=0; // resetting variables for the loop
-		int answerTwo=0;
+		int answerOne = 0; // resetting variables for the loop
+		int answerTwo = 0;
 		while ( answerOne < 9 && line[i] != '\0') { // splits the random line in the file into a 2D array
 			if ( line[i] == ':' ) { // the elements of which are different information about the kanji
 				answerOne ++;
@@ -85,7 +78,7 @@ int test(int range) // runs the actual test or quiz function
 			return(1);
 		}
 		int fail = 0;
-		for ( i = 0 ; i < 20 ; i ++ ){ // tests to see is the input exactly matches the answer from the file
+		for ( i = 0 ; i < 20 ; i++ ){ // tests to see is the input exactly matches the answer from the file
 			if ( input[i] != answer[4][i] && answer[4][i] != '\0') {
 				fail = 1;
 			}
@@ -97,7 +90,7 @@ int test(int range) // runs the actual test or quiz function
 			int errorLoop = 1;
 			int errorCount = 0;
 			while ( errorLoop == 1 ) {
-				if ( (errors[errorCount][0][0] == answer[1][0] && errors[errorCount][0][1] == answer[1][1] && errors[errorCount][0][1] == answer[1][1]) || errors[errorCount][1][0] == '\0'){ // adds the kanji to the list if you got it wrong, and increments the number
+				if ( (errors[errorCount][0][0] == answer[1][0] && errors[errorCount][0][1] == answer[1][1] && errors[errorCount][0][1] == answer[1][1]) || errors[errorCount][1][0] == '\0' ){ // adds the kanji to the list if you got it wrong, and increments the number
 					errorLoop = 0;
 					errors[errorCount][0][0] = answer[1][0];
 					errors[errorCount][0][1] = answer[1][1];
@@ -117,11 +110,12 @@ int test(int range) // runs the actual test or quiz function
 	}
 }
 
-int main() // the main starting loop
+int main() // the main starting loop, that is basically the menu
 {
 	char testvar = '\0'; // used so crudley catch a stray newline
 	printf("test up to number: "); // asks the level of the testing
-	int num, nitems;
+	int num;
+	int nitems;
 	nitems = scanf("%d", &num); // scans and tests the input, a bad input will end the program
 	if (nitems == EOF) {
 	} else if (nitems == 0) {
