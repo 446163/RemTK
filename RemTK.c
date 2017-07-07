@@ -1,3 +1,5 @@
+// todo - add a multigle choice section so that you dont have to actually input the character
+
 #include <time.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -29,7 +31,7 @@ int getLine(int limit) //gets and sets the kanji to test
 	return(0);
 }
 
-int test ( int range ) // runs the actual test or quiz function 
+int test ( int range, int setting ) // runs the actual test or quiz function 
 {
 	char errors[range][3][20]; // used to keep track of the errors that the payer makes
 	int score = 0;
@@ -38,6 +40,7 @@ int test ( int range ) // runs the actual test or quiz function
 	char answer [10][20];
 	int i;
 	int j;
+	int mode = 0;
 	for ( i = 0 ; i < range ; i++ ) { // sets the errors array to cleared as they are only used once
 		for ( j = 0 ; j < 20 ; j++ ) {
 			errors[i][0][j] = '\0';
@@ -46,6 +49,12 @@ int test ( int range ) // runs the actual test or quiz function
 		}
 	}
 	while ( 1 ) {
+		printf("set: %d\n", setting);
+		if ( setting == 2 ) { // sets the internal variable mode for the testing
+			mode = rand() % 2;
+		} else {
+			mode = setting;
+		}
 		for ( i = 0 ; i < 9 ; i++ ) {
 			for ( j = 0 ; j < 20 ; j++ ) {
 				answer[i][j] = '\0'; // clears out the arrays after each stage
@@ -66,21 +75,39 @@ int test ( int range ) // runs the actual test or quiz function
 			}
 			i++;
 		}
-		printf("%s \t %d/%d\n \t %s", answer[1], score, total, answer[8]); // prints the kanji to test and the current score
+		if ( mode == 1 ){
+			printf("%s \t %d/%d\n \t", answer[4], score, total); // prints the kanji to test and the current score
+		} else {
+			printf("%s \t %d/%d\n \t %s", answer[1], score, total, answer[8]); // prints the kanji to test and the current score
+		}
+
 		fgets(input, 20, stdin); // reading the answer
 		if ( input[0] == '\n' ) { // to exit the test press enter with no input
-			printf("you got %d%% correct.\nerror summary:\n", 100*score/total); // the percentage of correct answers is shown
-			for ( i = 0 ; i < range ; i++ ) { // runs through all options for the errors array
-				if ( errors[i][0][0] != '\0' ) { // only prints ones that have a value
-						printf("%d : %s : %s \n", errors[i][1][0], errors[i][0], errors[i][2]); // shows the user what they got wrong, what the right answer is and how many times they got it wrong during the test
+			printf("you got %d%% correct.\n", 100*score/total); // the percentage of correct answers is shown
+			if ( score == total )  {
+				printf("nice job, no errors :D\n");
+			} else {
+				printf("error summary:\n");
+				for ( i = 0 ; i < range ; i++ ) { // runs through all options for the errors array
+					if ( errors[i][0][0] != '\0' ) { // only prints ones that have a value
+							printf("%d : %s : %s \n", errors[i][1][0], errors[i][0], errors[i][2]); // shows the user what they got wrong, what the right answer is and how many times they got it wrong during the test
+					}
 				}
 			}
 			return(1);
 		}
 		int fail = 0;
-		for ( i = 0 ; i < 20 ; i++ ){ // tests to see is the input exactly matches the answer from the file
-			if ( input[i] != answer[4][i] && answer[4][i] != '\0') {
-				fail = 1;
+		if ( mode == 1 ) {
+			for ( i = 0 ; i < 3 ; i++ ) {
+				if ( input[i] != answer[1][i] && answer[1][i] != '\0') {
+					fail = 1;
+				}
+			}
+		} else {
+			for ( i = 0 ; i < 20 ; i++ ){ // tests to see is the input exactly matches the answer from the file
+				if ( input[i] != answer[4][i] && answer[4][i] != '\0') {
+					fail = 1;
+				}
 			}
 		}
 		total ++; // total (for the score) goes up when a test is done
@@ -112,7 +139,20 @@ int test ( int range ) // runs the actual test or quiz function
 
 int main() // the main starting loop, that is basically the menu
 {
+	int setting = 0;
 	char testvar = '\0'; // used so crudley catch a stray newline
+	char inp;
+	printf("(r)andom test, (s)wap test, [enter] for test: "); // new menu for different modes
+	scanf("%c", &inp);
+	if ( inp == 's' ) {
+		printf("testing En to Jp\n"); // sets testing for keyword to kanji
+		setting = 1;
+	} else if ( inp == 'r' ) { // sets testing for random 
+		printf("setting mode to random\n");
+		setting = 2;
+	} else {
+		printf("testing Jp to En\n"); // else testing is set to kanji to keyword
+	}
 	printf("test up to number: "); // asks the level of the testing
 	int num;
 	int nitems;
@@ -121,7 +161,7 @@ int main() // the main starting loop, that is basically the menu
 	} else if (nitems == 0) {
 	} else {
 		fgets(&testvar, 2, stdin);
-		test(num - 1); // calls the test with the level that is required
+		test(num - 1, setting); // calls the test with the level that is required
 	}
 }
 
