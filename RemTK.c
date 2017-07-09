@@ -1,17 +1,23 @@
 // todo - add a multigle choice section so that you dont have to actually input the character
 
+#include <sys/timeb.h> 
 #include <time.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h> 
 
 char line[100];
+char answer [10][20];
 
 int getLine(int limit) //gets and sets the kanji to test
 {
-	srand(time(NULL)); 
-	int lineNumber;
-    lineNumber = rand() % (limit + 1); // gets the random line in the range
+	usleep(2500);
+	int i;
+	int lineNumber; 
+	struct timeb tmb; 
+	ftime(&tmb);
+    lineNumber = tmb.millitm % (limit + 1); // gets the random line in the range
 	static const char filename[] = "heisig-data.txt";
 	FILE *file = fopen(filename, "r"); // opens the test file
 	int count = 0;
@@ -19,6 +25,19 @@ int getLine(int limit) //gets and sets the kanji to test
 	    while ( fgets ( line, sizeof line, file ) != NULL ) {
 	        if ( count == lineNumber ) { // goes to the required line
 	    		fclose(file); // reads the line into memory and then closes the file
+				i = 0;
+				int answerOne = 0; // resetting variables for the loop
+				int answerTwo = 0;
+				while ( answerOne < 9 && line[i] != '\0') { // splits the random line in the file into a 2D array
+					if ( line[i] == ':' ) { // the elements of which are different information about the kanji
+						answerOne ++;
+						answerTwo = 0;
+					} else {
+						answer[answerOne][answerTwo] = line[i]; // see NOTE 1 for more infomation 
+						answerTwo ++;
+					}
+					i++;
+				}
 				return(0);
 	        } else {
 	            count++;
@@ -33,14 +52,16 @@ int getLine(int limit) //gets and sets the kanji to test
 
 int test ( int range, int setting ) // runs the actual test or quiz function 
 {
+	struct timeb tmb; 
 	char errors[range][3][20]; // used to keep track of the errors that the payer makes
 	int score = 0;
 	int total = 0;
 	char input[20] = " "; // setting variables
-	char answer [10][20];
 	int i;
 	int j;
+	int cAns;
 	int mode = 0;
+	char tempChar[3];
 	for ( i = 0 ; i < range ; i++ ) { // sets the errors array to cleared as they are only used once
 		for ( j = 0 ; j < 20 ; j++ ) {
 			errors[i][0][j] = '\0';
@@ -49,9 +70,9 @@ int test ( int range, int setting ) // runs the actual test or quiz function
 		}
 	}
 	while ( 1 ) {
-		printf("set: %d\n", setting);
-		if ( setting == 2 ) { // sets the internal variable mode for the testing
-			mode = rand() % 2;
+		ftime(&tmb);
+		if ( setting == 2 ) { // sets the internal variable mode, for the testing
+			mode = tmb.millitm % 2;
 		} else {
 			mode = setting;
 		}
@@ -61,22 +82,41 @@ int test ( int range, int setting ) // runs the actual test or quiz function
 				input[j] = '\0';
 			}
 		}
-		getLine(range);
-		i = 0;
-		int answerOne = 0; // resetting variables for the loop
-		int answerTwo = 0;
-		while ( answerOne < 9 && line[i] != '\0') { // splits the random line in the file into a 2D array
-			if ( line[i] == ':' ) { // the elements of which are different information about the kanji
-				answerOne ++;
-				answerTwo = 0;
-			} else {
-				answer[answerOne][answerTwo] = line[i]; // see NOTE 1 for more infomation 
-				answerTwo ++;
-			}
-			i++;
+		for ( i = 0 ; i < 3 ; i++ ) {
+			tempChar[i] = '\0';
 		}
+		getLine(range);
 		if ( mode == 1 ){
-			printf("%s \t %d/%d\n \t", answer[4], score, total); // prints the kanji to test and the current score
+			printf("%s \t %d/%d\n", answer[4], score, total); // prints the kanji to test and the current score
+		} else if ( mode == 3 ) {
+			printf("%d/%d \t %s \n", score, total, answer[4]);
+			cAns = (tmb.millitm % 3) + 1;
+			if ( cAns == 1 ) {
+				for ( i = 0 ; i < 3 ; i++ ) {
+					printf("[%s]\t", answer[1]);
+					getLine(range);
+				}
+				printf("\n  1  \t  2  \t  3\n");
+			} else if ( cAns == 2 ) {
+				tempChar[0] = answer[1][0];
+				tempChar[1] = answer[1][1];
+				tempChar[2] = answer[1][2];
+				getLine(range);
+				printf("[%s]\t[%s]", answer[1], tempChar);
+				getLine(range);
+				printf("\t[%s]", answer[1]);
+				printf("\n  1  \t  2  \t  3\n");
+			} else if ( cAns == 3 ) {
+				tempChar[0] = answer[1][0];
+				tempChar[1] = answer[1][1];
+				tempChar[2] = answer[1][2];
+				for ( i = 0 ; i < 2 ; i++ ) {
+					getLine(range);
+					printf("[%s]\t", answer[1]);
+				}
+				printf("[%s]", tempChar);
+				printf("\n  1  \t  2  \t  3\n");
+			}
 		} else {
 			printf("%s \t %d/%d\n \t %s", answer[1], score, total, answer[8]); // prints the kanji to test and the current score
 		}
@@ -103,6 +143,10 @@ int test ( int range, int setting ) // runs the actual test or quiz function
 					fail = 1;
 				}
 			}
+		} else if ( mode == 3 ) {
+			if ( input[0]-48 != cAns ) {
+				fail = 1;
+			}
 		} else {
 			for ( i = 0 ; i < 20 ; i++ ){ // tests to see is the input exactly matches the answer from the file
 				if ( input[i] != answer[4][i] && answer[4][i] != '\0') {
@@ -112,8 +156,12 @@ int test ( int range, int setting ) // runs the actual test or quiz function
 		}
 		total ++; // total (for the score) goes up when a test is done
 		if ( fail == 1 ) {
-			input[strlen(input)-1] = 0; // if you get the answer wrong then it will tell you 
-			printf("incorrect\n\'%s\'✗\n\'%s\'✓\n",input,  answer[4]); // and give you the correct answer
+			if ( mode == 3 ) {
+				printf("incorrect\n\'%c\'✗\n\'%d\'✓\n", input[0], cAns ); // and give you the correct answer
+			} else {
+				input[strlen(input)-1] = 0; // if you get the answer wrong then it will tell you 
+				printf("incorrect\n\'%s\'✗\n\'%s\'✓\n", input, answer[4]); // and give you the correct answer
+			}
 			int errorLoop = 1;
 			int errorCount = 0;
 			while ( errorLoop == 1 ) {
@@ -139,10 +187,11 @@ int test ( int range, int setting ) // runs the actual test or quiz function
 
 int main() // the main starting loop, that is basically the menu
 {
+	srand(time(0)); 
 	int setting = 0;
 	char testvar = '\0'; // used so crudley catch a stray newline
 	char inp;
-	printf("(r)andom test, (s)wap test, [enter] for test: "); // new menu for different modes
+	printf("(r)andom test \n(s)wap test \n(m)ultiple choice \n[enter] normal test: "); // new menu for different modes
 	scanf("%c", &inp);
 	if ( inp == 's' ) {
 		printf("testing En to Jp\n"); // sets testing for keyword to kanji
@@ -150,6 +199,9 @@ int main() // the main starting loop, that is basically the menu
 	} else if ( inp == 'r' ) { // sets testing for random 
 		printf("setting mode to random\n");
 		setting = 2;
+	} else if ( inp == 'm' ) {
+		printf("setting mode to En to Jp multiple choice\n");
+		setting = 3;
 	} else {
 		printf("testing Jp to En\n"); // else testing is set to kanji to keyword
 	}
