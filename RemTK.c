@@ -17,7 +17,7 @@ int getLine(int limit) //gets and sets the kanji to test
 	int lineNumber; 
 	struct timeb tmb; 
 	ftime(&tmb);
-    lineNumber = tmb.millitm % (limit + 1); // gets the random line in the range
+    lineNumber = (tmb.millitm + time(NULL))  % (limit + 1); // gets the random line in the range
 	static const char filename[] = "heisig-data.txt";
 	FILE *file = fopen(filename, "r"); // opens the test file
 	int count = 0;
