@@ -7,6 +7,19 @@ A small test program for the RTK kanji method.
 This is a small program written in C that will test you on the kanji characters that are in the Remembering The Kanji book series. 
 The program is all based in the terminal and will test you up to the number of kanji that you have learned, so it can be used when you are learning as will as when you have learned them.
 
+## Running
+
+To run the program all you have to do is compile it with GCC and then run it, like so:
+
+```
+gcc RemTK.c -o RemTK && ./RemTK
+```
+But, once you have done this once, all you need to do is:
+```
+cd _Clone_directory_/
+./RemTK
+```
+
 ## How to use it
 When you start the program you will be asked how you want to be tested and this can be done through 4 different options:
 
