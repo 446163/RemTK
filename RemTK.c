@@ -160,7 +160,11 @@ int test ( int range, int setting ) // runs the actual test or quiz function
 				printf("incorrect\n\'%c\'✗\n\'%d\'✓\n", input[0], cAns ); // and give you the correct answer
 			} else {
 				input[strlen(input)-1] = 0; // if you get the answer wrong then it will tell you 
+				if ( mode == 1 ) {
+				printf("incorrect\n\'%s\'✗\n\'%s\'✓\n", input, answer[1]); // and give you the correct answer
+				} else {
 				printf("incorrect\n\'%s\'✗\n\'%s\'✓\n", input, answer[4]); // and give you the correct answer
+				}
 			}
 			int errorLoop = 1;
 			int errorCount = 0;
