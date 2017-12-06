@@ -1,5 +1,3 @@
-// todo - add a multigle choice section so that you dont have to actually input the character
-
 #include <sys/timeb.h> 
 #include <time.h>
 #include <stdio.h>
@@ -7,38 +5,83 @@
 #include <string.h>
 #include <unistd.h> 
 
-char line[100];
-char answer [10][20];
+typedef struct datatemplate { // data type for all the information of a character
+	char keyword [20];
+	char kanji [3];
+	int index;
+	int stroke;
+	int lesson;
+} data;
 
-int getLine(int limit) //gets and sets the kanji to test
-{
-	usleep(2500);
-	int i;
+typedef struct incorrecttemplate { // data type for showing mistakes in a test
+	int count;
+	char kanji [3];
+	char keyword [20];
+} incorrect;
+
+void clearInputBuffer( char c ) { // clears the read buffer of rouge characters
+	while (c != '\n' && c != EOF) {
+        c = getchar();
+	}
+}
+
+data getLine(int limit) { // function to return all data on a character in the data data type
+	limit = limit - 1;
+	char line[100]; // line maximum lengh
+	data kanjidata;
+	memset(kanjidata.keyword, '\0', sizeof kanjidata.keyword); // clears the data instance
+	memset(kanjidata.kanji, '\0', sizeof kanjidata.kanji);
+	kanjidata.index = 0;
+	kanjidata.stroke = 0; // sets all value int he data instance to 0
+	kanjidata.lesson = 0;
+	int i = 0;
 	int lineNumber; 
-	struct timeb tmb; 
+	struct timeb tmb; // time used as seed for random selection 
 	ftime(&tmb);
     lineNumber = (tmb.millitm + time(NULL))  % (limit + 1); // gets the random line in the range
-	static const char filename[] = "heisig-data.txt";
+	static const char filename[] = "new-heisig-data.txt";
 	FILE *file = fopen(filename, "r"); // opens the test file
 	int count = 0;
-	if ( file != NULL ) {
+	if ( file != NULL ) { // if the file exists
 	    while ( fgets ( line, sizeof line, file ) != NULL ) {
 	        if ( count == lineNumber ) { // goes to the required line
-	    		fclose(file); // reads the line into memory and then closes the file
-				i = 0;
-				int answerOne = 0; // resetting variables for the loop
-				int answerTwo = 0;
-				while ( answerOne < 9 && line[i] != '\0') { // splits the random line in the file into a 2D array
-					if ( line[i] == ':' ) { // the elements of which are different information about the kanji
-						answerOne ++;
-						answerTwo = 0;
-					} else {
-						answer[answerOne][answerTwo] = line[i]; // see NOTE 1 for more infomation 
-						answerTwo ++;
-					}
+				int j = 0;
+				while ( line[i] != ';' ) { // reads the keyword into the data instance
+					kanjidata.keyword[j] = line[i];
 					i++;
+					j++;
 				}
-				return(0);
+				i = i+2;
+				j = 0;
+				while ( line[i] != ';' ) { // reads the kanji character into the data instance
+					kanjidata.kanji[j] = line[i];
+					i++;
+					j++;
+				}
+				i = i+2;
+				j = 0;
+				while ( line[i] != ';') { // reads the index number into the data instance and converts it to an int
+					kanjidata.index = (10*kanjidata.index)+(line[i]-'0');
+					i++;
+					j++;
+				}
+				i = i+2;
+				j = 0;
+				while ( line[i] != ';') { // reads the stroke number into the data instance and converts it to an int
+
+					kanjidata.stroke = 10*kanjidata.stroke+line[i]-'0';
+					i++;
+					j++;
+				}
+				i = i+2;
+				j = 0;
+				while ( line[i] != '\n') { // reads the lesson number into the data instance and converts it to an int
+					kanjidata.lesson = 10*kanjidata.lesson+line[i]-'0';
+					i++;
+					j++;
+				}
+	    		fclose(file); // reads the line into memory and then closes the file
+				return(kanjidata); // returns the data instance to the call
 	        } else {
 	            count++;
 	        }
@@ -47,211 +90,220 @@ int getLine(int limit) //gets and sets the kanji to test
 	} else {
 		printf("the heisig-data text file does not exist\n"); // if the file is missing 
 	}
+	return(kanjidata); // returns an empty instance if no file found
+}
+
+int singleTest ( int high, int mode ) { // function for testing when you only display one option (normal and swap)
+	incorrect incorrect[high]; // initiation of the incorrect answer list
+	memset(incorrect, '\0', sizeof(incorrect[high]));
+	int loop = 1;
+	int count = 0;
+	int correct = 0;
+	while ( loop ) {
+		int i = 0;
+		int incorrectloop = 1;
+		int charCatch = 0;
+		char testData = '\0';
+		data kanjidata = getLine(high); // fills kanjidata with all the information about a character
+		if ( mode ) { // selects between normal and swap mode
+			printf("\n%s \t %d/%d \n\n:", kanjidata.keyword, correct, count);
+		} else {
+			printf("\n%s \t %d/%d \n\n:", kanjidata.kanji, correct, count);
+		}
+		char c = getchar(); 
+		if ( c == '\n' ) { // if the user enters nothing then end the test
+			i = 0;
+			printf("you got %d%% correct \nyou got the following wrong:\n", 100*correct/count); // display correct percentage 
+			while ( incorrect[i].kanji[0] != '\0' ) {
+				printf(" %d | %.3s | %s \n", incorrect[i].count, incorrect[i].kanji, incorrect[i].keyword); // display all the incorrect answers with how many times they got it incorrect
+				i++;
+			}
+			return(1); // return to the main function
+		}
+		while ( c != '\n' ) { // read all data until new line is hit
+			if ( mode ){
+				testData = kanjidata.kanji[i];
+			} else {
+				testData = kanjidata.keyword[i];
+			}
+			if ( c != testData ) { // if a single char is incorrect
+				charCatch = 1;
+			}
+			i++;
+			c = getchar();
+		}
+		count++;
+		if ( charCatch == 0 ) { // if all chars are correct 
+			printf("\nCorrect \n");
+			correct++;
+			incorrectloop = 0;
+		} else { // if at least one char is incorrect
+			if ( mode ){ // print the correct answer
+				printf("\n%s is the correct answer \n", kanjidata.kanji);
+			} else {
+				printf("\n%s is the correct answer \n", kanjidata.keyword);
+			}
+			i = 0;
+			while ( incorrectloop ) { // add the information of the incorrect answer to the incorrect array
+				if ( incorrect[i].kanji[0] == kanjidata.kanji[0] && incorrect[i].kanji[1] == kanjidata.kanji[1] && incorrect[i].kanji[2] == kanjidata.kanji[2]) {
+					incorrect[i].count++;
+					incorrectloop = 0;
+				} else if ( incorrect[i].kanji[0] == '\0' ) {
+					for ( int j = 0; j < 3; j++ ) { // add the kanji character
+						incorrect[i].kanji[j] = kanjidata.kanji[j];
+					}
+					for ( int j = 0; j < 20; j ++ ) { // add the keyword
+						incorrect[i].keyword[j] = kanjidata.keyword[j];
+					}
+					incorrect[i].count = 1;
+					incorrectloop = 0;
+				} else {
+					i++;
+				}
+			}
+		}
+	}
 	return(0);
 }
 
-int test ( int range, int setting ) // runs the actual test or quiz function 
-{
-	struct timeb tmb; 
-	char errors[range][3][20]; // used to keep track of the errors that the payer makes
-	int score = 0;
-	int total = 0;
-	char input[20] = " "; // setting variables
-	int i;
-	int j;
-	int cAns;
-	int mode = 0;
-	char tempChar[3];
-	for ( i = 0 ; i < range ; i++ ) { // sets the errors array to cleared as they are only used once
-		for ( j = 0 ; j < 20 ; j++ ) {
-			errors[i][0][j] = '\0';
-			errors[i][1][j] = 0;
-			errors[i][2][j] = '\0';
-		}
-	}
-	while ( 1 ) {
+int multiTest ( int high ) { // function for when you are testing with multiple options (multi)
+	incorrect incorrect[high];
+	memset(incorrect, '\0', sizeof(incorrect));
+	int loop = 1;
+	int count = 0;
+	int correct = 0;
+	while ( loop ) {
+		int incorrectloop = 1;
+		int i = 0;
+		data kanjidata1 = getLine(high);
+		usleep(1500);
+		data kanjidata2 = getLine(high); // gets the 3 different characters and information to display
+		usleep(1500);
+		data kanjidata = getLine(high); // this is the correct one
+		struct timeb tmb; 
 		ftime(&tmb);
-		if ( setting == 2 ) { // sets the internal variable mode, for the testing
-			mode = tmb.millitm % 2;
-		} else {
-			mode = setting;
-		}
-		for ( i = 0 ; i < 9 ; i++ ) {
-			for ( j = 0 ; j < 20 ; j++ ) {
-				answer[i][j] = '\0'; // clears out the arrays after each stage
-				input[j] = '\0';
-			}
-		}
-		for ( i = 0 ; i < 3 ; i++ ) {
-			tempChar[i] = '\0';
-		}
-		getLine(range);
-		if ( mode == 1 ){
-			printf("%s \t %d/%d\n", answer[4], score, total); // prints the kanji to test and the current score
-		} else if ( mode == 3 ) {
-			printf("%d/%d \t %s \n", score, total, answer[4]);
-			cAns = (tmb.millitm % 3) + 1;
-			if ( cAns == 1 ) {
-				for ( i = 0 ; i < 3 ; i++ ) {
-					printf("[%s]\t", answer[1]);
-					getLine(range);
-				}
-				printf("\n  1  \t  2  \t  3\n");
-			} else if ( cAns == 2 ) {
-				tempChar[0] = answer[1][0];
-				tempChar[1] = answer[1][1];
-				tempChar[2] = answer[1][2];
-				getLine(range);
-				printf("[%s]\t[%s]", answer[1], tempChar);
-				getLine(range);
-				printf("\t[%s]", answer[1]);
-				printf("\n  1  \t  2  \t  3\n");
-			} else if ( cAns == 3 ) {
-				tempChar[0] = answer[1][0];
-				tempChar[1] = answer[1][1];
-				tempChar[2] = answer[1][2];
-				for ( i = 0 ; i < 2 ; i++ ) {
-					getLine(range);
-					printf("[%s]\t", answer[1]);
-				}
-				printf("[%s]", tempChar);
-				printf("\n  1  \t  2  \t  3\n");
-			}
-		} else {
-			printf("%s \t %d/%d\n \t %s", answer[1], score, total, answer[8]); // prints the kanji to test and the current score
-		}
-
-		fgets(input, 20, stdin); // reading the answer
-		if ( input[0] == '\n' ) { // to exit the test press enter with no input
-			printf("you got %d%% correct.\n", 100*score/total); // the percentage of correct answers is shown
-			if ( score == total )  {
-				printf("nice job, no errors :D\n");
-			} else {
-				printf("error summary:\n");
-				for ( i = 0 ; i < range ; i++ ) { // runs through all options for the errors array
-					if ( errors[i][0][0] != '\0' ) { // only prints ones that have a value
-							printf("%d : %s : %s \n", errors[i][1][0], errors[i][0], errors[i][2]); // shows the user what they got wrong, what the right answer is and how many times they got it wrong during the test
-					}
-				}
+		int choice = (tmb.millitm % 3) + 1; // select what space to place the correct one in
+		printf("\n%s \t %d/%d\n", kanjidata.keyword, correct, count); // display the keyword
+		if ( choice == 1 ) { // place the correct kanji in the first place
+			printf("\n[%s]\t[%s]\t[%s]\n", kanjidata.kanji, kanjidata2.kanji, kanjidata1.kanji);
+		} else if ( choice == 2 ) { // place the correct kanji in the second place
+			printf("\n[%s]\t[%s]\t[%s]\n", kanjidata1.kanji, kanjidata.kanji, kanjidata2.kanji);
+		} else if (choice == 3 ){ // place the correct kanji in the third place
+			printf("\n[%s]\t[%s]\t[%s]\n", kanjidata2.kanji, kanjidata1.kanji, kanjidata.kanji);
+		} 
+		printf(" 1 \t 2 \t 3\n\n:"); // display the reference numbers
+		char c = getchar();
+		if ( c == '\n' ) { // when the user enters nothing then stop testing
+			i = 0;
+			printf("you got %d%% correct \nyou got the following wrong:\n", 100*correct/count); // displays correct percentage
+			while ( incorrect[i].kanji[0] != '\0' ) {
+				printf(" %d | %.3s | %s \n", incorrect[i].count, incorrect[i].kanji, incorrect[i].keyword); // displays all of the incorrect answers
+				i++;
 			}
 			return(1);
 		}
-		int fail = 0;
-		if ( mode == 1 ) {
-			for ( i = 0 ; i < 3 ; i++ ) {
-				if ( input[i] != answer[1][i] && answer[1][i] != '\0') {
-					fail = 1;
-				}
-			}
-		} else if ( mode == 3 ) {
-			if ( input[0]-48 != cAns ) {
-				fail = 1;
-			}
+		count++;
+		if ( c-'0' == choice ) { // compares input (char) to choice (int)
+			printf("\nCorrect \n"); // if the user gets it right
+			correct++;
+			incorrectloop = 0;
 		} else {
-			for ( i = 0 ; i < 20 ; i++ ){ // tests to see is the input exactly matches the answer from the file
-				if ( input[i] != answer[4][i] && answer[4][i] != '\0') {
-					fail = 1;
-				}
-			}
+			printf("\n%d[%s] is the correct answer \n", choice, kanjidata.kanji);
 		}
-		total ++; // total (for the score) goes up when a test is done
-		if ( fail == 1 ) {
-			if ( mode == 3 ) {
-				printf("incorrect\n\'%c\'✗\n\'%d\'✓\n", input[0], cAns ); // and give you the correct answer
-			} else {
-				input[strlen(input)-1] = 0; // if you get the answer wrong then it will tell you 
-				if ( mode == 1 ) {
-				printf("incorrect\n\'%s\'✗\n\'%s\'✓\n", input, answer[1]); // and give you the correct answer
-				} else {
-				printf("incorrect\n\'%s\'✗\n\'%s\'✓\n", input, answer[4]); // and give you the correct answer
-				}
-			}
-			int errorLoop = 1;
-			int errorCount = 0;
-			while ( errorLoop == 1 ) {
-				if ( (errors[errorCount][0][0] == answer[1][0] && errors[errorCount][0][1] == answer[1][1] && errors[errorCount][0][1] == answer[1][1]) || errors[errorCount][1][0] == '\0' ){ // adds the kanji to the list if you got it wrong, and increments the number
-					errorLoop = 0;
-					errors[errorCount][0][0] = answer[1][0];
-					errors[errorCount][0][1] = answer[1][1];
-					errors[errorCount][0][2] = answer[1][2];
-					errors[errorCount][1][0] ++;
-					for ( i = 0 ; i < 20 ; i++ ) {
-						errors[errorCount][2][i] = answer[2][i];
+			i = 0;
+			while ( incorrectloop ) { // adds incorrect answers to list
+				if ( incorrect[i].kanji[0] == kanjidata.kanji[0] && incorrect[i].kanji[1] == kanjidata.kanji[1] && incorrect[i].kanji[2] == kanjidata.kanji[2]) {
+					incorrect[i].count++;
+					incorrectloop = 0;
+				} else if ( incorrect[i].kanji[0] == '\0' ) {
+					for ( int j = 0; j < 3; j++ ) { // adds incorrect kanji
+						incorrect[i].kanji[j] = kanjidata.kanji[j];
 					}
-					errorLoop = 0;
+					for ( int j = 0; j < 20; j ++ ) { // adds incorrect keyword
+						incorrect[i].keyword[j] = kanjidata.keyword[j];
+					}
+					incorrect[i].count = 1;
+					incorrectloop = 0;
+				} else {
+					i++;
 				}
-				errorCount ++;
 			}
-		} else {
-			score ++;
-			printf("correct ✓ \n"); // if you get is right then you know and your score goes up
-		}
+		clearInputBuffer(c);
 	}
+	return(0);
 }
 
-int main() // the main starting loop, that is basically the menu
-{
-	srand(time(0)); 
-	int setting = 0;
-	char testvar = '\0'; // used so crudley catch a stray newline
+int main() { // starts the appropriate testing and contains the menu
+	srand(time(0)); // use the time as a seed for randomness
 	char inp;
-	printf("(r)andom test \n(s)wap test \n(m)ultiple choice \n[enter] normal test: "); // new menu for different modes
-	scanf("%c", &inp);
+	char c = '0';
+	int high = 0;
+	printf("(m)ultiple choice \n(S)wap \n(n)ormal \n:"); // ask what mode
+	inp = getchar(); // store selection
+	printf("Test up to? \n:"); // ask what index the user want to test up to
+	scanf("%d", &high); // read in the int
+	clearInputBuffer(c);
 	if ( inp == 's' ) {
-		printf("testing En to Jp\n"); // sets testing for keyword to kanji
-		setting = 1;
-	} else if ( inp == 'r' ) { // sets testing for random 
-		printf("setting mode to random\n");
-		setting = 2;
+		singleTest(high, 1); // swap test
 	} else if ( inp == 'm' ) {
-		printf("setting mode to En to Jp multiple choice\n");
-		setting = 3;
+		multiTest(high); // multi test
 	} else {
-		printf("testing Jp to En\n"); // else testing is set to kanji to keyword
+		singleTest(high, 0); // normal test
 	}
-	printf("test up to number: "); // asks the level of the testing
-	int num;
-	int nitems;
-	nitems = scanf("%d", &num); // scans and tests the input, a bad input will end the program
-	if (nitems == EOF) {
-	} else if (nitems == 0) {
-	} else {
-		fgets(&testvar, 2, stdin);
-		test(num - 1, setting); // calls the test with the level that is required
+	printf("Do you want to test again? (y)es or (n)o\n:"); // when the test is over ask if they want to test again
+	inp = '\0';
+	inp = getchar();
+	clearInputBuffer(inp);
+	if ( inp == 'y' ) {
+		main(); // if yes, run the program again 
+		return 0;
 	}
 }
 
 /*
- *functions:
- * 	main - the starting function
- * 		input: 
+ * functions:
+ * 	clearInputBuffer
+ * 		input
+ * 			char c - to clear currenly read input as well
+ * 		output
+ * 			nothing
+ * 		process
+ * 			consumes all of the input buffer for the program, eliminating rouge newlines mostly
+ * 	getLine
+ * 		input
+ * 			high - the distance through the kanji you want to go (index number)
+ * 		output
+ * 			data struct containing all the data for a character
+ * 		process
+ * 			reads the text file and sorts all the sections into the data struct
+ * 	singleTest
+ * 		input
+ * 			high - needed to call getLine with the appropriate kanji depth
+ * 		output
+ * 			int - used to end the function when the test is done
+ * 		process
+ * 			shows the user a single output, user has to input the corresponding data, keeps track of correct percentage and incorrect characters
+ * 	multiTest
+ * 		input
+ * 			high - the distance through the kanji you want to go (index number)
+ * 		output
+ * 			int - used to end the function when the test is done
+ * 		process
+ * 			shows the user 3 different kanji and a keyword as an output, user inputs the location of the correct kanji, keeps track of correct percentage and incorrect characters
+ * 	main
+ * 		input
  * 			none
- * 		output:
- * 			none
- * 		effects:
- * 			calls the test function and starts the program
+ * 		output
+ * 			int - program ran successfully or not
+ * 		process
+ * 			provided a menu to lauch the selected testing type and allows retesting without exiting the program
  *
- * 	test - the main body of the program that tests the user
- * 		input:
- * 			range: 
- *				how far to test the user
- *		output:
- *			1 when finished
- *		effects:
- *			calls Getline
- *			displays the kanji
- *			compares input to answer
- *			awards points
- *	Getline - gets a line from the file containing all the infomation and reads it in to the program
- *		input: 
- * 			limit:
- *  			how far to read through the file as a mamimum according to the skill level of the user
- *  	output:
- *  		none
- *  	effects:
- *  		sets the global varible 'line' to have all the infomation to be tested
- *  		
- *NOTE 1:
- * 	answer[9] = [heisig number][kanji][keyword in the 3rd edition][keyword in the 4th edition][keyword in the 5th edition][stroke count][index ordinal][lesson number][empty for error catching]
- * 	additional information is stored here for future stuff to add
+ *
+ *
+ *
+ *
+ *
+ *
+ *
+ *
  */
