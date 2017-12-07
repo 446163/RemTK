@@ -9,7 +9,7 @@ typedef struct datatemplate { // data type for all the information of a characte
 	char keyword [20];
 	char kanji [3];
 	int index;
-	int stroke;
+	char stroke[2];
 	int lesson;
 } data;
 
@@ -31,8 +31,8 @@ data getLine(int limit) { // function to return all data on a character in the d
 	data kanjidata;
 	memset(kanjidata.keyword, '\0', sizeof kanjidata.keyword); // clears the data instance
 	memset(kanjidata.kanji, '\0', sizeof kanjidata.kanji);
+	memset(kanjidata.stroke, '\0', sizeof kanjidata.stroke);
 	kanjidata.index = 0;
-	kanjidata.stroke = 0; // sets all value int he data instance to 0
 	kanjidata.lesson = 0;
 	int i = 0;
 	int lineNumber; 
@@ -68,8 +68,7 @@ data getLine(int limit) { // function to return all data on a character in the d
 				i = i+2;
 				j = 0;
 				while ( line[i] != ';') { // reads the stroke number into the data instance and converts it to an int
-
-					kanjidata.stroke = 10*kanjidata.stroke+line[i]-'0';
+					kanjidata.stroke[j] = line[i];
 					i++;
 					j++;
 				}
@@ -95,7 +94,7 @@ data getLine(int limit) { // function to return all data on a character in the d
 
 int singleTest ( int high, int mode ) { // function for testing when you only display one option (normal and swap)
 	incorrect incorrect[high]; // initiation of the incorrect answer list
-	memset(incorrect, '\0', sizeof(incorrect[high]));
+	memset(incorrect, '\0', sizeof(incorrect));
 	int loop = 1;
 	int count = 0;
 	int correct = 0;
@@ -103,9 +102,9 @@ int singleTest ( int high, int mode ) { // function for testing when you only di
 		int i = 0;
 		int incorrectloop = 1;
 		int charCatch = 0;
-		char testData = '\0';
+		char testData = 'n';
 		data kanjidata = getLine(high); // fills kanjidata with all the information about a character
-		if ( mode ) { // selects between normal and swap mode
+		if ( mode == 1 || mode == 2 ) { // selects between normal and swap mode
 			printf("\n%s \t %d/%d \n\n:", kanjidata.keyword, correct, count);
 		} else {
 			printf("\n%s \t %d/%d \n\n:", kanjidata.kanji, correct, count);
@@ -120,26 +119,32 @@ int singleTest ( int high, int mode ) { // function for testing when you only di
 			}
 			return(1); // return to the main function
 		}
-		while ( c != '\n' ) { // read all data until new line is hit
-			if ( mode ){
+		while ( testData != '\0' ) { // read all data until new line is hit
+			if ( mode == 1 ){
 				testData = kanjidata.kanji[i];
+			} else if ( mode == 2 ) {
+				testData = kanjidata.stroke[i];
 			} else {
 				testData = kanjidata.keyword[i];
 			}
 			if ( c != testData ) { // if a single char is incorrect
 				charCatch = 1;
+				break;
 			}
 			i++;
 			c = getchar();
 		}
+		clearInputBuffer(c);
 		count++;
 		if ( charCatch == 0 ) { // if all chars are correct 
 			printf("\nCorrect \n");
 			correct++;
 			incorrectloop = 0;
 		} else { // if at least one char is incorrect
-			if ( mode ){ // print the correct answer
+			if ( mode == 1 ){ // print the correct answer
 				printf("\n%s is the correct answer \n", kanjidata.kanji);
+			} else if ( mode == 2 ) {
+				printf("\n%s is the correct answer: %s \n", kanjidata.stroke, kanjidata.kanji);
 			} else {
 				printf("\n%s is the correct answer \n", kanjidata.keyword);
 			}
@@ -238,19 +243,21 @@ int main() { // starts the appropriate testing and contains the menu
 	char inp;
 	char c = '0';
 	int high = 0;
-	printf("(m)ultiple choice \n(S)wap \n(n)ormal \n:"); // ask what mode
+	printf("(m)ultiple choice \n(r)everse \n(s)troke count \n(n)ormal \n:"); // ask what mode
 	inp = getchar(); // store selection
 	printf("Test up to? \n:"); // ask what index the user want to test up to
 	scanf("%d", &high); // read in the int
 	clearInputBuffer(c);
-	if ( inp == 's' ) {
+	if ( inp == 'r' ) {
 		singleTest(high, 1); // swap test
 	} else if ( inp == 'm' ) {
 		multiTest(high); // multi test
+	} else if ( inp == 's' ) {
+		singleTest(high, 2);
 	} else {
 		singleTest(high, 0); // normal test
 	}
-	printf("Do you want to test again? (y)es or (n)o\n:"); // when the test is over ask if they want to test again
+	printf("Do you want to test again? (y)es or (n)o\n:"); // when the test is over ask if they want to test again;
 	inp = '\0';
 	inp = getchar();
 	clearInputBuffer(inp);
