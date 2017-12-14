@@ -19,6 +19,11 @@ typedef struct incorrecttemplate { // data type for showing mistakes in a test
 	char keyword [20];
 } incorrect;
 
+typedef struct incorrectLessonTemplate { // data type for showing mistakes in a test
+	int lesson;
+	int count;
+} incorrectLesson;
+
 void clearInputBuffer( char c ) { // clears the read buffer of rouge characters
 	while (c != '\n' && c != EOF) {
         c = getchar();
@@ -92,9 +97,25 @@ data getLine(int limit) { // function to return all data on a character in the d
 	return(kanjidata); // returns an empty instance if no file found
 }
 
+void sort( incorrectLesson a[], int size ) {
+	int i,j;
+	incorrectLesson temp;
+	for( i = 0; i < size; i++ ) {
+		for( j = 0 ;j < size - 1; j++ ) {
+			if( a[j].count > a[j+1].count ) {
+				temp = a[j];
+				a[j] = a[j+1];
+				a[j+1] = temp;
+			}
+		}
+	}
+}
+
 int singleTest ( int high, int mode ) { // function for testing when you only display one option (normal and swap)
 	incorrect incorrect[high]; // initiation of the incorrect answer list
+	incorrectLesson incorrectLesson[56];
 	memset(incorrect, '\0', sizeof(incorrect));
+	memset(incorrectLesson, '\0', sizeof(incorrectLesson));
 	int loop = 1;
 	int count = 0;
 	int correct = 0;
@@ -105,9 +126,9 @@ int singleTest ( int high, int mode ) { // function for testing when you only di
 		char testData = 'n';
 		data kanjidata = getLine(high); // fills kanjidata with all the information about a character
 		if ( mode == 1 || mode == 2 ) { // selects between normal and swap mode
-			printf("\n%s \t %d/%d \n\n:", kanjidata.keyword, correct, count);
+			printf("\n%s  %d/%d  \n\n:", kanjidata.keyword, correct, count);
 		} else {
-			printf("\n%s \t %d/%d \n\n:", kanjidata.kanji, correct, count);
+			printf("\n%s  %d/%d  \n\n:", kanjidata.kanji, correct, count);
 		}
 		char c = getchar(); 
 		if ( c == '\n' ) { // if the user enters nothing then end the test
@@ -117,15 +138,47 @@ int singleTest ( int high, int mode ) { // function for testing when you only di
 				printf(" %d | %.3s | %s \n", incorrect[i].count, incorrect[i].kanji, incorrect[i].keyword); // display all the incorrect answers with how many times they got it incorrect
 				i++;
 			}
+			printf("Lesson breakdown: \n");
+			i = 0;
+			while ( incorrectLesson[i].lesson != '\0' ) {
+				i++;
+			}
+			sort(incorrectLesson, i);
+			i = 0;
+			while ( incorrectLesson[i].lesson != '\0' ) {
+				if ( incorrectLesson[i].lesson > 9 ) {
+					printf(" %d |", incorrectLesson[i].lesson);
+				} else {
+					printf(" %d  |", incorrectLesson[i].lesson);
+				}
+				if ( incorrectLesson[i].count > 9 ) {
+					printf(" %d |", incorrectLesson[i].count);
+				} else {
+					printf(" %d  |", incorrectLesson[i].count);
+				}
+				if ( 100/count*incorrectLesson[i].count > 9 ){
+					printf(" %d%% | ", 100/(count-correct)*incorrectLesson[i].count);
+				} else {
+					printf(" %d%%  | ", 100/(count-correct)*incorrectLesson[i].count);
+				}
+				for ( int a = 0; a < 100/(count-correct)*incorrectLesson[i].count; a++ ) {
+					printf("=");
+				}
+				printf("\n");
+				i++;
+			}
 			return(1); // return to the main function
 		}
-		while ( testData != '\0' ) { // read all data until new line is hit
+		while ( 1 ) { // read all data until new line is hit
 			if ( mode == 1 ){
 				testData = kanjidata.kanji[i];
 			} else if ( mode == 2 ) {
 				testData = kanjidata.stroke[i];
 			} else {
 				testData = kanjidata.keyword[i];
+			}
+			if ( testData == '\0' && c == '\n' ) {
+				break;
 			}
 			if ( c != testData ) { // if a single char is incorrect
 				charCatch = 1;
@@ -152,7 +205,7 @@ int singleTest ( int high, int mode ) { // function for testing when you only di
 			while ( incorrectloop ) { // add the information of the incorrect answer to the incorrect array
 				if ( incorrect[i].kanji[0] == kanjidata.kanji[0] && incorrect[i].kanji[1] == kanjidata.kanji[1] && incorrect[i].kanji[2] == kanjidata.kanji[2]) {
 					incorrect[i].count++;
-					incorrectloop = 0;
+					break;
 				} else if ( incorrect[i].kanji[0] == '\0' ) {
 					for ( int j = 0; j < 3; j++ ) { // add the kanji character
 						incorrect[i].kanji[j] = kanjidata.kanji[j];
@@ -161,6 +214,19 @@ int singleTest ( int high, int mode ) { // function for testing when you only di
 						incorrect[i].keyword[j] = kanjidata.keyword[j];
 					}
 					incorrect[i].count = 1;
+					break;
+				} else {
+					i++;
+				}
+			}
+			i = 0;
+			while ( incorrectloop ) {
+				if ( incorrectLesson[i].lesson == kanjidata.lesson ) {
+					incorrectLesson[i].count++;
+					incorrectloop = 0;
+				} else if ( incorrectLesson[i].lesson == '\0' ) {
+					incorrectLesson[i].lesson = kanjidata.lesson;
+					incorrectLesson[i].count = 1;
 					incorrectloop = 0;
 				} else {
 					i++;
@@ -173,7 +239,9 @@ int singleTest ( int high, int mode ) { // function for testing when you only di
 
 int multiTest ( int high ) { // function for when you are testing with multiple options (multi)
 	incorrect incorrect[high];
+	incorrectLesson incorrectLesson[56];
 	memset(incorrect, '\0', sizeof(incorrect));
+	memset(incorrectLesson, '\0', sizeof(incorrectLesson));
 	int loop = 1;
 	int count = 0;
 	int correct = 0;
@@ -205,6 +273,35 @@ int multiTest ( int high ) { // function for when you are testing with multiple 
 				printf(" %d | %.3s | %s \n", incorrect[i].count, incorrect[i].kanji, incorrect[i].keyword); // displays all of the incorrect answers
 				i++;
 			}
+			printf("Lesson breakdown: \n");
+			i = 0;
+			while ( incorrectLesson[i].lesson != '\0' ) {
+				i++;
+			}
+			sort(incorrectLesson, i);
+			i = 0;
+			while ( incorrectLesson[i].lesson != '\0' ) {
+				if ( incorrectLesson[i].lesson > 9 ) {
+					printf(" %d |", incorrectLesson[i].lesson);
+				} else {
+					printf(" %d  |", incorrectLesson[i].lesson);
+				}
+				if ( incorrectLesson[i].count > 9 ) {
+					printf(" %d |", incorrectLesson[i].count);
+				} else {
+					printf(" %d  |", incorrectLesson[i].count);
+				}
+				if ( 100/count*incorrectLesson[i].count > 9 ){
+					printf(" %d%% | ", 100/(count-correct)*incorrectLesson[i].count);
+				} else {
+					printf(" %d%%  | ", 100/(count-correct)*incorrectLesson[i].count);
+				}
+				for ( int a = 0; a < 100/(count-correct)*incorrectLesson[i].count; a++ ) {
+					printf("=");
+				}
+				printf("\n");
+				i++;
+			}
 			return(1);
 		}
 		count++;
@@ -219,7 +316,7 @@ int multiTest ( int high ) { // function for when you are testing with multiple 
 			while ( incorrectloop ) { // adds incorrect answers to list
 				if ( incorrect[i].kanji[0] == kanjidata.kanji[0] && incorrect[i].kanji[1] == kanjidata.kanji[1] && incorrect[i].kanji[2] == kanjidata.kanji[2]) {
 					incorrect[i].count++;
-					incorrectloop = 0;
+					break;
 				} else if ( incorrect[i].kanji[0] == '\0' ) {
 					for ( int j = 0; j < 3; j++ ) { // adds incorrect kanji
 						incorrect[i].kanji[j] = kanjidata.kanji[j];
@@ -228,11 +325,25 @@ int multiTest ( int high ) { // function for when you are testing with multiple 
 						incorrect[i].keyword[j] = kanjidata.keyword[j];
 					}
 					incorrect[i].count = 1;
+					break;
+				} else {
+					i++;
+				}
+			}
+			i = 0;
+			while ( incorrectloop ) {
+				if ( incorrectLesson[i].lesson == kanjidata.lesson ) {
+					incorrectLesson[i].count++;
+					incorrectloop = 0;
+				} else if ( incorrectLesson[i].lesson == '\0' ) {
+					incorrectLesson[i].lesson = kanjidata.lesson;
+					incorrectLesson[i].count = 1;
 					incorrectloop = 0;
 				} else {
 					i++;
 				}
 			}
+
 		clearInputBuffer(c);
 	}
 	return(0);
