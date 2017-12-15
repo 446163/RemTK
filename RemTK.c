@@ -30,7 +30,8 @@ void clearInputBuffer( char c ) { // clears the read buffer of rouge characters
 	}
 }
 
-data getLine(int limit) { // function to return all data on a character in the data data type
+data getLine(int limit, int offset, char lesson) { // function to return all data on a character in the data data type
+	int lessonOffset[58][2] = {{1,15},{16,34},{35,54},{55,74},{75,98},{99,109},{110,133},{134,184},{185,206},{207,249},{250,264},{265,294},{295,320},{321,345},{346,376},{377,395},{396,422},{423,514},{515,545},{546,546},{547,548},{549,554},{555,620},{621,687},{688,829},{830,859},{860,958},{959,1023},{1024,1104},{1105,1124},{1125,1167},{1168,1206},{1207,1268},{1269,1305},{1306,1337},{1338,1390},{1391,1431},{1432,1497},{1498,1534},{1535,1596},{1597,1651},{1652,1711},{1712,1743},{1744,1777},{1778,1813},{1814,1846},{1847,1894},{1895,1914},{1915,1946},{1947,1970},{1971,1997},{1998,2025},{2026,2053},{2054,2077},{2078,2132},{2133,2162},{2163,2182},{2183,2201}};
 	limit = limit - 1;
 	char line[100]; // line maximum lengh
 	data kanjidata;
@@ -43,7 +44,11 @@ data getLine(int limit) { // function to return all data on a character in the d
 	int lineNumber; 
 	struct timeb tmb; // time used as seed for random selection 
 	ftime(&tmb);
-    lineNumber = (tmb.millitm + time(NULL))  % (limit + 1); // gets the random line in the range
+	if ( lesson == 'l' ) {
+		lineNumber = ((tmb.millitm + time(NULL)) % (lessonOffset[limit][1]-lessonOffset[limit][0])) + lessonOffset[limit][0];
+	} else {
+    	lineNumber = (tmb.millitm + time(NULL)) % (limit + 1); // gets the random line in the range
+	}
 	static const char filename[] = "new-heisig-data.txt";
 	FILE *file = fopen(filename, "r"); // opens the test file
 	int count = 0;
@@ -111,7 +116,7 @@ void sort( incorrectLesson a[], int size ) {
 	}
 }
 
-int singleTest ( int high, int mode ) { // function for testing when you only display one option (normal and swap)
+int singleTest ( int high, int mode, char lesson ) { // function for testing when you only display one option (normal and swap)
 	incorrect incorrect[high]; // initiation of the incorrect answer list
 	incorrectLesson incorrectLesson[56];
 	memset(incorrect, '\0', sizeof(incorrect));
@@ -124,7 +129,7 @@ int singleTest ( int high, int mode ) { // function for testing when you only di
 		int incorrectloop = 1;
 		int charCatch = 0;
 		char testData = 'n';
-		data kanjidata = getLine(high); // fills kanjidata with all the information about a character
+		data kanjidata = getLine(high, 0, lesson); // fills kanjidata with all the information about a character
 		if ( mode == 1 || mode == 2 ) { // selects between normal and swap mode
 			printf("\n%s  %d/%d  \n\n:", kanjidata.keyword, correct, count);
 		} else {
@@ -138,34 +143,36 @@ int singleTest ( int high, int mode ) { // function for testing when you only di
 				printf(" %d | %.3s | %s \n", incorrect[i].count, incorrect[i].kanji, incorrect[i].keyword); // display all the incorrect answers with how many times they got it incorrect
 				i++;
 			}
-			printf("Lesson breakdown: \n");
-			i = 0;
-			while ( incorrectLesson[i].lesson != '\0' ) {
-				i++;
-			}
-			sort(incorrectLesson, i);
-			i = 0;
-			while ( incorrectLesson[i].lesson != '\0' ) {
-				if ( incorrectLesson[i].lesson > 9 ) {
-					printf(" %d |", incorrectLesson[i].lesson);
-				} else {
-					printf(" %d  |", incorrectLesson[i].lesson);
+			if ( lesson != 'l' ) {
+				printf("Lesson breakdown: \n");
+				i = 0;
+				while ( incorrectLesson[i].lesson != '\0' ) {
+					i++;
 				}
-				if ( incorrectLesson[i].count > 9 ) {
-					printf(" %d |", incorrectLesson[i].count);
-				} else {
-					printf(" %d  |", incorrectLesson[i].count);
+				sort(incorrectLesson, i);
+				i = 0;
+				while ( incorrectLesson[i].lesson != '\0' ) {
+					if ( incorrectLesson[i].lesson > 9 ) {
+						printf(" %d |", incorrectLesson[i].lesson);
+					} else {
+						printf(" %d  |", incorrectLesson[i].lesson);
+					}
+					if ( incorrectLesson[i].count > 9 ) {
+						printf(" %d |", incorrectLesson[i].count);
+					} else {
+						printf(" %d  |", incorrectLesson[i].count);
+					}
+					if ( 100/count*incorrectLesson[i].count > 9 ){
+						printf(" %d%% | ", 100/(count-correct)*incorrectLesson[i].count);
+					} else {
+						printf(" %d%%  | ", 100/(count-correct)*incorrectLesson[i].count);
+					}
+					for ( int a = 0; a < 100/(count-correct)*incorrectLesson[i].count; a++ ) {
+						printf("=");
+					}
+					printf("\n");
+					i++;
 				}
-				if ( 100/count*incorrectLesson[i].count > 9 ){
-					printf(" %d%% | ", 100/(count-correct)*incorrectLesson[i].count);
-				} else {
-					printf(" %d%%  | ", 100/(count-correct)*incorrectLesson[i].count);
-				}
-				for ( int a = 0; a < 100/(count-correct)*incorrectLesson[i].count; a++ ) {
-					printf("=");
-				}
-				printf("\n");
-				i++;
 			}
 			return(1); // return to the main function
 		}
@@ -188,6 +195,7 @@ int singleTest ( int high, int mode ) { // function for testing when you only di
 			c = getchar();
 		}
 		clearInputBuffer(c);
+		c = '\0';
 		count++;
 		if ( charCatch == 0 ) { // if all chars are correct 
 			printf("\nCorrect \n");
@@ -237,7 +245,7 @@ int singleTest ( int high, int mode ) { // function for testing when you only di
 	return(0);
 }
 
-int multiTest ( int high ) { // function for when you are testing with multiple options (multi)
+int multiTest ( int high, char lesson ) { // function for when you are testing with multiple options (multi)
 	incorrect incorrect[high];
 	incorrectLesson incorrectLesson[56];
 	memset(incorrect, '\0', sizeof(incorrect));
@@ -248,11 +256,11 @@ int multiTest ( int high ) { // function for when you are testing with multiple 
 	while ( loop ) {
 		int incorrectloop = 1;
 		int i = 0;
-		data kanjidata1 = getLine(high);
+		data kanjidata1 = getLine(high, 0, lesson);
 		usleep(1500);
-		data kanjidata2 = getLine(high); // gets the 3 different characters and information to display
+		data kanjidata2 = getLine(high, 0, lesson); // gets the 3 different characters and information to display
 		usleep(1500);
-		data kanjidata = getLine(high); // this is the correct one
+		data kanjidata = getLine(high, 0, lesson); // this is the correct one
 		struct timeb tmb; 
 		ftime(&tmb);
 		int choice = (tmb.millitm % 3) + 1; // select what space to place the correct one in
@@ -273,34 +281,36 @@ int multiTest ( int high ) { // function for when you are testing with multiple 
 				printf(" %d | %.3s | %s \n", incorrect[i].count, incorrect[i].kanji, incorrect[i].keyword); // displays all of the incorrect answers
 				i++;
 			}
-			printf("Lesson breakdown: \n");
-			i = 0;
-			while ( incorrectLesson[i].lesson != '\0' ) {
-				i++;
-			}
-			sort(incorrectLesson, i);
-			i = 0;
-			while ( incorrectLesson[i].lesson != '\0' ) {
-				if ( incorrectLesson[i].lesson > 9 ) {
-					printf(" %d |", incorrectLesson[i].lesson);
-				} else {
-					printf(" %d  |", incorrectLesson[i].lesson);
+			if ( lesson != 'l' ) {
+				printf("Lesson breakdown: \n");
+				i = 0;
+				while ( incorrectLesson[i].lesson != '\0' ) {
+					i++;
 				}
-				if ( incorrectLesson[i].count > 9 ) {
-					printf(" %d |", incorrectLesson[i].count);
-				} else {
-					printf(" %d  |", incorrectLesson[i].count);
+				sort(incorrectLesson, i);
+				i = 0;
+				while ( incorrectLesson[i].lesson != '\0' ) {
+					if ( incorrectLesson[i].lesson > 9 ) {
+						printf(" %d |", incorrectLesson[i].lesson);
+					} else {
+						printf(" %d  |", incorrectLesson[i].lesson);
+					}
+					if ( incorrectLesson[i].count > 9 ) {
+						printf(" %d |", incorrectLesson[i].count);
+					} else {
+						printf(" %d  |", incorrectLesson[i].count);
+					}
+					if ( 100/count*incorrectLesson[i].count > 9 ){
+						printf(" %d%% | ", 100/(count-correct)*incorrectLesson[i].count);
+					} else {
+						printf(" %d%%  | ", 100/(count-correct)*incorrectLesson[i].count);
+					}
+					for ( int a = 0; a < 100/(count-correct)*incorrectLesson[i].count; a++ ) {
+						printf("=");
+					}
+					printf("\n");
+					i++;
 				}
-				if ( 100/count*incorrectLesson[i].count > 9 ){
-					printf(" %d%% | ", 100/(count-correct)*incorrectLesson[i].count);
-				} else {
-					printf(" %d%%  | ", 100/(count-correct)*incorrectLesson[i].count);
-				}
-				for ( int a = 0; a < 100/(count-correct)*incorrectLesson[i].count; a++ ) {
-					printf("=");
-				}
-				printf("\n");
-				i++;
 			}
 			return(1);
 		}
@@ -351,22 +361,31 @@ int multiTest ( int high ) { // function for when you are testing with multiple 
 
 int main() { // starts the appropriate testing and contains the menu
 	srand(time(0)); // use the time as a seed for randomness
-	char inp;
-	char c = '0';
+	char inp = '\0';
 	int high = 0;
+	char lesson = '\0';
+	char c = '\0';
 	printf("(m)ultiple choice \n(r)everse \n(s)troke count \n(n)ormal \n:"); // ask what mode
 	inp = getchar(); // store selection
-	printf("Test up to? \n:"); // ask what index the user want to test up to
+	clearInputBuffer(c);
+	printf("(l)esson test \n(n)ormal test \n:");
+	lesson = getchar();
+	clearInputBuffer(c);
+	if ( lesson == 'l' ) {
+		printf("Test what lesson? \n:");
+	} else {
+		printf("Test up to? \n:"); // ask what index the user want to test up to
+	}
 	scanf("%d", &high); // read in the int
 	clearInputBuffer(c);
 	if ( inp == 'r' ) {
-		singleTest(high, 1); // swap test
+		singleTest(high, 1, lesson); // swap test
 	} else if ( inp == 'm' ) {
-		multiTest(high); // multi test
+		multiTest(high, lesson); // multi test
 	} else if ( inp == 's' ) {
-		singleTest(high, 2);
+		singleTest(high, 2, lesson);
 	} else {
-		singleTest(high, 0); // normal test
+		singleTest(high, 0, lesson); // normal test
 	}
 	printf("Do you want to test again? (y)es or (n)o\n:"); // when the test is over ask if they want to test again;
 	inp = '\0';
